@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Упрощенная форма -->
+
+<store>
+    <product>
+        <name>Шампунь Жумайсынба</name>
+        <price>450</price>
+    </product>
+    <product>
+        <name>Метла для полетов</name>
+        <price>12000</price>
+    </product>
+    <product>
+        <name>Мыло из березы</name>
+        <price>150</price>
+    </product>
+</store>

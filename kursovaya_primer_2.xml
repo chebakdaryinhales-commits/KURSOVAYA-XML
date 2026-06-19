@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<school>
+    <category name="Учителя">
+        <teacher name="Х. Виталий" exp="45"/>
+        <teacher name="К. Калиненград" exp="53"/>
+    </category>
+
+    <category name="Ученики">
+        <student name="Charlie Kirk" grade="4"/>
+        <student name="Малахов" grade="7"/>
+    </category>
+
+
+</school>
