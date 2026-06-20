@@ -1,13 +1,13 @@
 const express = require('express');
-const fs = require('fs'); 
+const fs = require('fs'); // Модуль для работы с файлами
 const path = require('path');
 const app = express();
 
 app.use(express.text({ type: 'text/xml' }));
 
-
+// Обрабатываем запросы к нашей службе
 app.all('/xml-service', (req, res) => {
-    
+    // ЕСЛИ запрашивают контракт (например, http://localhost:8000/xml-service?wsdl)
     if (req.query.wsdl !== undefined) {
         console.log('[Сервер] Кто-то запросил WSDL контракт. Отдаю файл service.wsdl...');
         
@@ -16,6 +16,7 @@ app.all('/xml-service', (req, res) => {
         return res.sendFile(wsdlPath);
     }
 
+    // ИНАЧЕ обрабатываем обычный POST-запрос с XML-данными
     if (req.method === 'POST') {
         const xmlRequest = req.body || '';
         console.log('\n[Сервер] Получен XML запрос от клиента!');
