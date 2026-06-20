@@ -10,6 +10,7 @@
     <category name="Ученики">
         <student name="Charlie Kirk" grade="4"/>
         <student name="Малахов" grade="7"/>
+        <student name="Алексей Дмитреевич" grade="5"/>
     </category>
 
 
