@@ -1,43 +1,65 @@
 const express = require('express');
-const soap = require('soap');
-const fs = require('fs');
-
+const fs = require('fs'); 
+const path = require('path');
 const app = express();
 
-const myServiceImplementation = {
-    MyService: {
-        MyPort: {
-            GetUserData: function(args, callback) {
-                
-                const id = args.userId; 
-                console.log(`[Сервер] Мой Endpoint вызван! Ищем юзера с ID: ${id}`);
+app.use(express.text({ type: 'text/xml' }));
 
-                
-                if (id === "42") {
-                    callback(null, {
-                        name: "Vasya",
-                        role: "Clown"
-                    });
-                } else {
-                    callback({
-                        Fault: {
-                            faultcode: "Client.UserNotFound",
-                            faultstring: "Тут нет такого!"
-                        }
-                    });
-                }
-            }
-        }
+
+app.all('/xml-service', (req, res) => {
+    
+    if (req.query.wsdl !== undefined) {
+        console.log('[Сервер] Кто-то запросил WSDL контракт. Отдаю файл service.wsdl...');
+        
+        const wsdlPath = path.join(__dirname, 'service.wsdl');
+        res.set('Content-Type', 'text/xml');
+        return res.sendFile(wsdlPath);
     }
-};
 
+    if (req.method === 'POST') {
+        const xmlRequest = req.body || '';
+        console.log('\n[Сервер] Получен XML запрос от клиента!');
 
-const wsdlXmlContent = fs.readFileSync('service.wsdl', 'utf8');
+        const match = xmlRequest.match(/<userId>(.*?)<\/userId>/);
+        const userId = match ? match[1] : null;
+
+        console.log(`[Сервер] Из XML извлечен userId: "${userId}"`);
+
+        let xmlResponse = '';
+
+        if (userId === '42') {
+            xmlResponse = `<?xml version="1.0" encoding="UTF-8"?>
+            <soapenv:Envelope xmlns:soapenv="http://xmlsoap.org">
+                <soapenv:Body>
+                    <GetUserDataResponse xmlns="http://example.com">
+                        <name>Ivan Ivanov</name>
+                        <role>Administrator</role>
+                    </GetUserDataResponse>
+                </soapenv:Body>
+            </soapenv:Envelope>`;
+        } else {
+            xmlResponse = `<?xml version="1.0" encoding="UTF-8"?>
+            <soapenv:Envelope xmlns:soapenv="http://xmlsoap.org">
+                <soapenv:Body>
+                    <soapenv:Fault>
+                        <faultcode>Client.UserNotFound</faultcode>
+                        <faultstring>Пользователь с таким ID не найден!</faultstring>
+                    </soapenv:Fault>
+                </soapenv:Body>
+            </soapenv:Envelope>`;
+        }
+
+        res.set('Content-Type', 'text/xml');
+        return res.send(xmlResponse);
+    }
+
+    res.status(405).send('Используйте POST для отправки XML или ?wsdl для просмотра контракта.');
+});
 
 const PORT = 8000;
-app.listen(PORT, function() {
-    soap.listen(app, '/wsdl', myServiceImplementation, wsdlXmlContent, function() {
-        console.log(`[Сервер] Отлично, я запустил XML веб-службу!`);
-        console.log(`Ссылка на контракт: http://localhost:${PORT}/wsdl?wsdl`);
-    });
+app.listen(PORT, () => {
+    console.log(`====================================================`);
+    console.log(`[Сервер] XML веб-служба запущена!`);
+    console.log(`[Сервер] Контракт доступен тут: http://localhost:${PORT}/xml-service?wsdl`);
+    console.log(`====================================================`);
 });

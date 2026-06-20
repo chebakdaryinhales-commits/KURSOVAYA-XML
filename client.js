@@ -1,57 +1,47 @@
-const soap = require('soap');
+console.log('[Клиент] Запуск приложения...');
+console.log('[Клиент] Маршаллинг: собираем строгий XML SOAP-запрос...');
 
-const wsdlUrl = 'http://localhost:8000/wsdl?wsdl';
+const userIdToSend = '42';
 
-console.log('[Клиент] Начинаю подключение к удаленному WSDL...');
+const soapEnvelope = `<?xml version="1.0" encoding="UTF-8"?>
+<soapenv:Envelope xmlns:soapenv="http://xmlsoap.org">
+    <soapenv:Body>
+        <GetUserDataRequest xmlns="http://example.com">
+            <userId>${userIdToSend}</userId>
+        </GetUserDataRequest>
+    </soapenv:Body>
+</soapenv:Envelope>`;
 
-soap.createClient(wsdlUrl, function(err, client) {
-    if (err) {
-        console.error('[Клиент] Ошибка при парсинге WSDL контракта:', err);
-        return;
-    }
+console.log('[Клиент] Отправляем XML-пакет на Endpoint сервера...');
 
-    console.log('[Клиент] Контракт прочитан. Вызываю удаленный метод GetUserData...');
+fetch('http://localhost:8000/xml-service', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'text/xml' 
+    },
+    body: soapEnvelope
+})
+.then(response => response.text()) 
+.then(xmlResponse => {
+    console.log('[Клиент] Ответ получен! Начинаем десериализацию (парсинг) текста...');
+
+    const nameMatch = xmlResponse.match(/<name>(.*?)<\/name>/);
+    const roleMatch = xmlResponse.match(/<role>(.*?)<\/role>/);
+    const faultMatch = xmlResponse.match(/<faultstring>(.*?)<\/faultstring>/);
 
 
-    const requestArgs = { userId: '42' };
-
-
-    const handleResponse = function(err, response) {
-        if (err) {
-            console.error('[Клиент] Сервер вернул ошибку (SOAP Fault):', err);
-            return;
-        }
-        console.log('[Клиент] Успех! Ответ от веб-службы получен:');
-        console.log(`ФИО: ${response.name}`);
-        console.log(`Статус в системе: ${response.role}`);
-    };
-
-    
-    if (typeof client.GetUserData === 'function') {
-        
-        client.GetUserData(requestArgs, handleResponse);
-    } else if (client.MyService && client.MyService.MyPort && typeof client.MyService.MyPort.GetUserData === 'function') {
-        
-        client.MyService.MyPort.GetUserData(requestArgs, handleResponse);
+    if (faultMatch) {
+        console.error(`\n❌ [Клиент] Сервер вернул ошибку: "${faultMatch[1]}"`);
+    } else if (nameMatch && roleMatch) {
+        console.log(`\n✅ [Клиент] Успех! Данные из XML успешно извлечены:`);
+        console.log(`----------------------------------------`);
+        console.log(`ФИО пользователя: ${nameMatch[1]}`);
+        console.log(`Роль в системе:   ${roleMatch[1]}`);
+        console.log(`----------------------------------------`);
     } else {
-        let methodFound = false;
-        for (let serviceKey in client) {
-            if (client[serviceKey] && typeof client[serviceKey] === 'object') {
-                for (let portKey in client[serviceKey]) {
-                    if (client[serviceKey][portKey] && typeof client[serviceKey][portKey].GetUserData === 'function') {
-                        client[serviceKey][portKey].GetUserData(requestArgs, handleResponse);
-                        methodFound = true;
-                        break;
-                    }
-                }
-            }
-            if (methodFound) break;
-        }
-
-
-        if (!methodFound) {
-            console.error('[Клиент] КРИТИЧЕСКАЯ ОШИБКА: Метод GetUserData не найден в структуре WSDL!');
-            console.log('[Клиент] Вот доступная структура твоего WSDL:', Object.keys(client.describe()));
-        }
+        console.log('[Клиент] Неизвестный формат XML-ответа:', xmlResponse);
     }
+})
+.catch(err => {
+    console.error('[Клиент] Ошибка сети (возможно, сервер не запущен):', err.message);
 });
