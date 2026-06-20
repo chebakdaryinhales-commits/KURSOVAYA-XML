@@ -1,8 +1,10 @@
 const soap = require('soap');
 
+
 const wsdlUrl = 'http://localhost:8000/wsdl?wsdl';
 
 console.log('[Клиент] Начинаю подключение к удаленному WSDL...');
+
 
 soap.createClient(wsdlUrl, function(err, client) {
     if (err) {
@@ -15,7 +17,7 @@ soap.createClient(wsdlUrl, function(err, client) {
 
     console.log('[Клиент] Контракт прочитан. Вызываю удаленный метод GetUserData...');
 
-    client.GetUserData(requestArgs, function(err, response) {
+    client.MyService.MyPort.GetUserData(requestArgs, function(err, response) {
         if (err) {
             console.error('[Клиент] Сервер вернул ошибку (SOAP Fault):', err);
             return;
